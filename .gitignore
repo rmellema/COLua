@@ -1,0 +1,7 @@
+# Vim swap files
+*.swp
+*.swo
+
+# other tmp files
+*~
+
