@@ -28,7 +28,7 @@ function Object:new(...)
 end
 
 function Object:alloc()
-  return setmetatable({}, self.objmt)
+  return setmetatable({super = self.super.methods}, self.objmt)
 end
 
 function Object:type()
