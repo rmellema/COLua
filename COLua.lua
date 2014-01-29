@@ -2,10 +2,11 @@
 local metamethods= {__tostring = true, __len = true, __gc = true, __unm = true, __add = true, __sub = true, __mul = true, __div = true, __pow = true, __concat = true, __eq = true, __lt = true, __le = true}
 
 local function registerValue(clss, key, value)
-  checkArg(2, key, "string")
+  assert(type(clss) == "table", "Trying to register a value on a non table")
+  assert(type(key) == "string", "The key must be a string!")
   if metamethods[key] then
     clss.objmt[key] = value
-  elseif key:sub(1,1) == '_' and then
+  elseif key:sub(1,1) == '_' then
     rawset(clss, key:sub(2, -1), value)
   else
     rawset(clss.methods, key, value)
@@ -73,7 +74,7 @@ setmetatable(Object.methods, {__newindex = registerMethod, __metatable = ""})
 
 local function class(tab, proto)
   proto = proto or tab
-  checkArg(1, proto, "table")
+  assert(type(proto) == "table", "The interface must be a table!")
   local parent = proto.extends or Object
   proto.extends = nil
   local name = (proto.name or "Unnamed")
