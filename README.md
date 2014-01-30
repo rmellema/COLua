@@ -23,7 +23,7 @@ Overriding is as simple as registering the method that you want to override. The
 ###Creating classes with methods
 Normally, you want to create classes that already have methods on them, instead of adding them afterwards. This can be done by giving an interface to `class`. An interface is a table with method names as keys and methods or values as values. 
 
-The interface also has to special fields, `name` to signal the type of the class and `extends` to give the superclass of the object. If `extends` is nil, `Object` is used as superclass.
+The interface also has to special fields, the first element in the interface to signal the type of the class and `extends` to give the superclass of the object. If `extends` is nil, `Object` is used as superclass.
 
 To create a static method, you simply preface the name with a `_`, just like when creating methods on the class itself.
 
