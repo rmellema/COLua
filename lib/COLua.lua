@@ -103,7 +103,9 @@ local function class(tab, proto)
       registerValue(clss, key, value)
     end
   end
-  return setmetatable(clss, mt)
+  setmetatable(clss, mt)
+  mt.__call = clss.new
+  return clss
 end
   
 return setmetatable({Object = Object, class = class}, {__call = class})
