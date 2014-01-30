@@ -5,11 +5,11 @@ local function registerValue(clss, key, value)
   assert(type(clss) == "table", "Trying to register a value on a non table")
   assert(type(key) == "string" or type(key) == "number", "The key must be a string or number!")
   if metamethods[key] then
-    clss.objmt[key] = value
+    clss.__objmt[key] = value
   elseif key:sub(1,1) == '_' then
     rawset(clss, key:sub(2, -1), value)
   else
-    rawset(clss.methods, key, value)
+    rawset(clss.__methods, key, value)
   end
 end
 
@@ -18,37 +18,37 @@ local function registerMethod(obj, key, value)
 end
 
 local Object = {}
-Object.methods = {}
-Object.__name = "Object"
-Object.methods.__type = "Object"
-Object.methods.__class = Object
+Object.__methods = {}
+Object.__type = "Object"
+Object.__methods.__type = "Object"
+Object.__methods.__class = Object
 
 function Object:new(...)
   return self:alloc():init(...)
 end
 
 function Object:alloc()
-  return setmetatable({super = self.super.methods}, self.objmt)
+  return setmetatable({super = self.super.__methods}, self.__objmt)
 end
 
 function Object:type()
   return self.__name
 end
 
-function Object.methods:init()
+function Object.__methods:init()
   return self
 end
 
-function Object.methods:class()
+function Object.__methods:class()
   return self.__class
 end
 
-function Object.methods:type()
+function Object.__methods:type()
   return self.__type
 end
 
 function Object:isKindOf(name)
-  if self.__name == name then return true end
+  if self:type() == name then return true end
   if self.super then
     return self.super:isKindOf(name)
   else
@@ -56,21 +56,15 @@ function Object:isKindOf(name)
   end
 end
 
-function Object.methods:isTypeOf(name)
-  if self:type() == name then return true end
-  local class = self:class()
-  if class.super then
-    return class.super:isKindOf(name)
-  else
-    return false
-  end
+function Object.__methods:isKindOf(name)
+  return self:class():isKindOf(name)
 end
 
 Object.registerValue = registerValue
-Object.methods.registerValue = registerMethod
-Object.objmt = {__index = Object.methods, __newindex = registerMethod, __metatable = ""}
+Object.__methods.registerValue = registerMethod
+Object.__objmt = {__index = Object.__methods, __newindex = registerMethod, __metatable = ""}
 setmetatable(Object, {__newindex = registerValue, __call = Object.new, __metatable = ""})
-setmetatable(Object.methods, {__newindex = registerMethod, __metatable = ""})
+setmetatable(Object.__methods, {__newindex = registerMethod, __metatable = ""})
 
 local function class(tab, proto)
   proto = proto or tab
@@ -82,22 +76,22 @@ local function class(tab, proto)
   proto.name = nil
   local clss = {}
   clss.__name = name
-  clss.methods = setmetatable({}, {__index = parent.methods, __newindex = registerMethod, __metetable = ""})
-  clss.methods.__type = name
-  clss.methods.__class = clss
+  clss.__methods = setmetatable({}, {__index = parent.__methods, __newindex = registerMethod, __metetable = ""})
+  clss.__methods.__type = name
+  clss.__methods.__class = clss
   clss.super = parent
   local mt = {__index = parent, __newindex = registerValue, __call = clss.new, __metatable = ""}
-  clss.objmt = {__index = clss.methods, __newindex = registerMethod, __metatable= ""}
+  clss.__objmt = {__index = clss.__methods, __newindex = registerMethod, __metatable= ""}
   for k, v in pairs(metamethods) do
     if not proto[k] then
-      proto[k] = parent.objmt[k]
+      proto[k] = parent.__objmt[k]
     end
   end
   for key, value in pairs(proto) do
     if metamethods[key] then
-      clss.objmt[key] = value
+      clss.__objmt[key] = value
       if key == "__tostring" then
-        clss.methods.tostring = value
+        clss.__methods.tostring = value
       end
     else
       registerValue(clss, key, value)
