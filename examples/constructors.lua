@@ -1,6 +1,6 @@
 local class = require "COLua"
 
-local Foo = class{name = "Foo";
+local Foo = class{"Foo";
   init = function(self, n) 
     self.n = n or self:class().n 
     return self 
@@ -13,7 +13,7 @@ print(obj.n)
 local obj2 = Foo:new()
 print(obj2.n)
 
-local Bar = class{name = "Bar",
+local Bar = class{"Bar",
   extends = Foo;
   init = function(self, n, m)
     self = self.super.init(self, n)

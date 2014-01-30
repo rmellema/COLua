@@ -1,9 +1,7 @@
-local class = require "COLua"
+local COLua = require "COLua"
 
-local Box = class{ "Box",
-  _box = function(self, value)
-  end,
-  unbox = function(self)
-  end}
+local Box = COLua.prototype{ "Box",
+  _box = "function",
+  unbox = "function"}
 
 return Box

@@ -1,7 +1,7 @@
 local class = require "COLua"
 
 print("Start testing!")
-local Foo = class{name = "Foo",
+local Foo = class{"Foo",
   n = 5,
   _n = 10,
   _answer = 42,
@@ -19,7 +19,7 @@ obj2.m = 7
 print(obj.m ..' '..obj2.m..' '.. tostring(Foo.m))
 print(obj)
 print("-------")
-local Bar = class{name = "Bar", extends = Foo, _answer = "None", n = 1}
+local Bar = class{"Bar", extends = Foo, _answer = "None", n = 1}
 print(Foo.answer)
 print(Bar.answer)
 

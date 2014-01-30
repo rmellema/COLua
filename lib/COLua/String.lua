@@ -1,9 +1,9 @@
 --- A box object for strings
 
-local class = require "COLua"
+local COLua = require "COLua"
 local Box = require "COLua.Box"
 
-local String = class{ "String", extends = Box;
+local String = COLua{ "String", implements = {Box};
   -- Constructor
   init = function(self, str)
     assert(type(str) == "string", "Excpected string recieved "..type(str))
