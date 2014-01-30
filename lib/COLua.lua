@@ -17,6 +17,20 @@ local function registerMethod(obj, key, value)
   rawset(obj, key, value)
 end
 
+local oldType = type
+local function type(obj)
+  if oldType(obj) ~= "table" then
+    return oldType(obj)
+  else
+    if obj.type and oldType(obj.type) == "function" then
+      return obj:type()
+    else
+      return oldType(obj)
+    end
+  end
+end
+
+
 local Object = {}
 Object.__methods = {}
 Object.__type = "Object"
@@ -150,4 +164,4 @@ local function class(tab, inter)
   return clss
 end
   
-return setmetatable({Object = Object, class = class, prototype = prototype}, {__call = class})
+return setmetatable({Object = Object, class = class, prototype = prototype, type = type}, {__call = class})
