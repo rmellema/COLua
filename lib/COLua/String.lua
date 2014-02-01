@@ -3,9 +3,11 @@
 local COLua = require "COLua"
 local Box = require "COLua.Box"
 
+
 local String = COLua{ "String", implements = {Box};
   -- Constructor
   init = function(self, str)
+    if not str then return nil end
     assert(type(str) == "string", "Excpected string recieved "..type(str))
     self.str = str
     return self
@@ -17,7 +19,14 @@ local String = COLua{ "String", implements = {Box};
   __len = function(self)
     return self:len()
   end,
-  -- Override methods from Box
+  __concat = function(obj1, obj2)
+    if COLua.type(obj1) == "String" then
+      return String(obj1.str..obj2)
+    else
+      return String(obj1..obj2.str)
+    end
+  end,
+  -- Implement methods from Box
   _box = function(self, str)
     return self:new(str)
   end,

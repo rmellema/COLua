@@ -1,12 +1,14 @@
 --- An OOP module for lua
-local metamethods= {__tostring = true, __len = true, __gc = true, __unm = true, __add = true, __sub = true, __mul = true, __div = true, __pow = true, __concat = true, __eq = true, __lt = true, __le = true}
+local reserved = {__type = true, __methods = true, __proto = true, __objmt = true, __index = true, __newindex =true, __metatable = true} 
 
 local function registerValue(clss, key, value)
   assert(type(clss) == "table", "Trying to register a value on a non table")
   assert(type(key) == "string", "The key must be a string!")
-  if metamethods[key] then
+  if key:sub(1,2) == '__' and not reserved[key] then
     clss.__objmt[key] = value
+    clss.__objmt.__metatable[key] = value
   elseif key:sub(1,1) == '_' then
+    if reserved[key] then error("Trying to set field: "..key.." of a class") end
     rawset(clss, key:sub(2, -1), value)
   else
     rawset(clss.__methods, key, value)
@@ -47,7 +49,7 @@ function Object:alloc()
 end
 
 function Object:type()
-  return self.__name
+  return self.__type
 end
 
 function Object:implements(proto)
@@ -55,9 +57,9 @@ function Object:implements(proto)
   local implement, mismatch = true, nil
   for k, v in pairs(proto)do
     assert(type(k) == "string", "The key must be a string!")
-    if k ~= "__name" then
+    if not reserved[k] then
       local comp
-      if metamethods[k] then
+      if k:sub(1,2)== '__' then
         comp = self.__objmt[key]
       elseif string.sub(k, 1,1) == '_' then
         comp = self[string.sub(k, 2, -1)]
@@ -72,7 +74,7 @@ function Object:implements(proto)
     end
   end
   if implement then
-    self.__proto[proto.__name] = true
+    self.__proto[proto.__type] = true
   end
   return implement, mismatch
 end
@@ -104,15 +106,15 @@ end
 
 Object.registerValue = registerValue
 Object.__methods.registerValue = registerMethod
-Object.__objmt = {__index = Object.__methods, __newindex = registerMethod, __metatable = ""}
+Object.__objmt = {__index = Object.__methods, __newindex = registerMethod, __metatable = {}}
 setmetatable(Object, {__newindex = registerValue, __call = Object.new, __metatable = ""})
 setmetatable(Object.__methods, {__newindex = registerMethod, __metatable = ""})
 
 local function prototype(tab, proto)
   proto = proto or tab
-  local name = proto[1] or proto.name or "Unnamed"
+  local name = proto[1] or "Unnamed"
   proto[1] = nil
-  proto.__name = name
+  proto.__type = name
   for k, v in pairs(proto) do
     if type(v) ~= "string" then
       error("Invalid prototype, values must be strings")
@@ -137,23 +139,16 @@ local function class(tab, inter)
   clss.__proto = {}
   clss.super = parent
   local mt = {__index = parent, __newindex = registerValue, __call = clss.new, __metatable = ""}
-  clss.__objmt = {__index = clss.__methods, __newindex = registerMethod, __metatable= ""}
-  for k, v in pairs(metamethods) do
-    if not inter[k] then
-      inter[k] = parent.__objmt[k]
-    end
-  end
-  for key, value in pairs(inter) do
-    if metamethods[key] then
-      clss.__objmt[key] = value
-      if key == "__tostring" then
-        clss.__methods.tostring = value
-      end
-    else
-      registerValue(clss, key, value)
+  clss.__objmt = {__index = clss.__methods, __newindex = registerMethod, __metatable= {}}
+  for k, v in pairs(parent.__objmt) do
+    if not reserved[k] then
+      clss.__objm[k] = v
     end
   end
   setmetatable(clss, mt)
+  for key, value in pairs(inter) do
+    clss[key] = value
+  end
   mt.__call = clss.new
   for i = 1, #prototypes do
     local imp, mismatch = clss:implements(prototypes[i])
