@@ -1,5 +1,5 @@
 --- An OOP module for lua
-local reserved = {__type = true, __methods = true, __proto = true, __objmt = true, __index = true, __newindex =true, __metatable = true} 
+local reserved = {__type = true, __methods = true, __proto = true, __objmt = true, __index = true, __newindex =true, __metatable = true, __name = true, __parents = true} 
 
 local function registerValue(clss, key, value)
   assert(type(clss) == "table", "Trying to register a value on a non table")
@@ -26,6 +26,8 @@ local function type(obj)
   else
     if obj.type and oldType(obj.type) == "function" then
       return obj:type()
+    elseif obj.__type then
+      return obj.__type
     else
       return oldType(obj)
     end
@@ -55,12 +57,12 @@ end
 function Object:implements(proto)
   if self.__proto[proto.__name] then return true end
   local implement, mismatch = true, nil
-  for k, v in pairs(proto)do
+  for k, v in pairs(proto) do
     assert(type(k) == "string", "The key must be a string!")
     if not reserved[k] then
-      local comp
+      local comp = nil
       if k:sub(1,2)== '__' then
-        comp = self.__objmt[key]
+        comp = self.__objmt[k]
       elseif string.sub(k, 1,1) == '_' then
         comp = self[string.sub(k, 2, -1)]
       else
@@ -74,7 +76,7 @@ function Object:implements(proto)
     end
   end
   if implement then
-    self.__proto[proto.__type] = true
+    self.__proto[proto.__name] = true
   end
   return implement, mismatch
 end
@@ -114,10 +116,45 @@ local function prototype(tab, proto)
   proto = proto or tab
   local name = proto[1] or "Unnamed"
   proto[1] = nil
-  proto.__type = name
+  proto.__type = "Prototype"
+  proto.__name = name
+  if proto.extends then
+    proto.__parents = proto.extends
+    if type(proto.extends) == "Prototype" then
+      proto.extends = {proto.extends}
+    end
+    if type(proto.extends) == "table" then
+      proto.__parents = proto.extends
+      setmetatable(proto, {__index = function(tab, key)
+        for k, v in pairs(tab.__parents) do
+          if v[key] then
+            return v[key]
+          end
+        end
+      end,
+      __pairs = function(tab)
+        local num = 0
+        return function(prot, idx)
+          local key, value = next((tab.__parents[num] or prot), idx)
+          if not key then
+            num = num + 1
+            if tab.__parents[num] then
+              key, value = next(tab.__parents[num])
+            else
+              return nil
+            end
+          end
+          return key, value
+        end, tab, nil
+      end})
+    else
+      error "Trying to extend non prototypes or tables"
+    end
+    proto.extends = nil
+  end
   for k, v in pairs(proto) do
-    if type(v) ~= "string" then
-      error("Invalid prototype, values must be strings")
+    if type(v) ~= "string" and not reserved[k] then
+      error("Invalid prototype, values must be strings, "..k.."is not a string")
     end
   end
   return proto
@@ -132,7 +169,7 @@ local function class(tab, inter)
   inter[1] = nil
   local prototypes = inter.implements or {}
   local clss = {}
-  clss.__name = name
+  clss.__type = name
   clss.__methods = setmetatable({}, {__index = parent.__methods, __newindex = registerMethod, __metetable = ""})
   clss.__methods.__type = name
   clss.__methods.__class = clss
@@ -142,7 +179,7 @@ local function class(tab, inter)
   clss.__objmt = {__index = clss.__methods, __newindex = registerMethod, __metatable= {}}
   for k, v in pairs(parent.__objmt) do
     if not reserved[k] then
-      clss.__objm[k] = v
+      clss.__objmt[k] = v
     end
   end
   setmetatable(clss, mt)
