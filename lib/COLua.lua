@@ -5,7 +5,6 @@ local function registerValue(clss, key, value)
   assert(type(clss) == "table", "Trying to register a value on a non table")
   assert(type(key) == "string", "The key must be a string!")
   if key:sub(1,2) == '__' and not reserved[key] then
-    clss.__objmt[key] = value
     clss.__objmt.__metatable[key] = value
   elseif key:sub(1,1) == '_' then
     if reserved[key] then error("Trying to set field: "..key.." of a class") end
@@ -23,14 +22,12 @@ local oldType = type
 local function type(obj)
   if oldType(obj) ~= "table" then
     return oldType(obj)
+  elseif obj.type and oldType(obj.type) == "function" then
+    return obj:type()
+  elseif obj.__type then
+    return obj.__type
   else
-    if obj.type and oldType(obj.type) == "function" then
-      return obj:type()
-    elseif obj.__type then
-      return obj.__type
-    else
-      return oldType(obj)
-    end
+    return oldType(obj)
   end
 end
 
@@ -51,6 +48,10 @@ function Object:alloc()
 end
 
 function Object:type()
+  return "Class"
+end
+
+function Object:name()
   return self.__type
 end
 
@@ -117,7 +118,9 @@ local function prototype(tab, proto)
   local name = proto[1] or "Unnamed"
   proto[1] = nil
   proto.__type = "Prototype"
+  proto.type = function() return "Prototype" end
   proto.__name = name
+  proto.name = function(self) return self.__name end
   if proto.extends then
     proto.__parents = proto.extends
     if type(proto.extends) == "Prototype" then
@@ -175,7 +178,7 @@ local function class(tab, inter)
   clss.__methods.__class = clss
   clss.__proto = {}
   clss.super = parent
-  local mt = {__index = parent, __newindex = registerValue, __call = clss.new, __metatable = ""}
+  local mt = {__index = parent, __newindex = registerValue, __call =function(self, ...) return self:new(...) end, __metatable = ""}
   clss.__objmt = {__index = clss.__methods, __newindex = registerMethod, __metatable= {}}
   for k, v in pairs(parent.__objmt) do
     if not reserved[k] then
