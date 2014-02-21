@@ -5,7 +5,10 @@ local function registerValue(clss, key, value)
   assert(type(clss) == "table", "Trying to register a value on a non table")
   assert(type(key) == "string", "The key must be a string!")
   if key:sub(1,2) == '__' and not reserved[key] then
+    clss.__objmt[key] = value
     clss.__objmt.__metatable[key] = value
+  elseif key == "__index" or key == "__newindex" then
+    clss.__objmt[key:sub(3, -1)] = value
   elseif key:sub(1,1) == '_' then
     if reserved[key] then error("Trying to set field: "..key.." of a class") end
     rawset(clss, key:sub(2, -1), value)
@@ -179,7 +182,23 @@ local function class(tab, inter)
   clss.__proto = {}
   clss.super = parent
   local mt = {__index = parent, __newindex = registerValue, __call =function(self, ...) return self:new(...) end, __metatable = ""}
-  clss.__objmt = {__index = clss.__methods, __newindex = registerMethod, __metatable= {}}
+  clss.__objmt = {__index = function(self, key)
+    if clss.__objmt.index then
+      local ret = clss.__objmt.index(self, key)
+      if ret then
+        return ret
+      end
+    end
+    return clss.__methods[key]
+  end,
+  __newindex = function(self, key, value)
+    if clss.__objmt.newindex then
+      return clss.__objmt.newindex(self, key, value)
+    else
+      return registerMethod(self, key, value)
+    end
+  end,
+  __metatable= {}}
   for k, v in pairs(parent.__objmt) do
     if not reserved[k] then
       clss.__objmt[k] = v
