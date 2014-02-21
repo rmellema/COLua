@@ -121,9 +121,7 @@ local function prototype(tab, proto)
   local name = proto[1] or "Unnamed"
   proto[1] = nil
   proto.__type = "Prototype"
-  proto.type = function() return "Prototype" end
   proto.__name = name
-  proto.name = function(self) return self.__name end
   if proto.extends then
     proto.__parents = proto.extends
     if type(proto.extends) == "Prototype" then
@@ -160,7 +158,7 @@ local function prototype(tab, proto)
   end
   for k, v in pairs(proto) do
     if type(v) ~= "string" and not reserved[k] then
-      error("Invalid prototype, values must be strings, "..k.."is not a string")
+      error("Invalid prototype, values must be strings, "..k.." is not a string")
     end
   end
   return proto
