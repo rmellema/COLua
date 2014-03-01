@@ -5,6 +5,7 @@ local COLua = require "COLua"
 local Exception = COLua{"Exeption";
   init = function(self, msg)
     self.msg = msg
+    return self
   end,
 
   __tostring = function(self)
@@ -15,8 +16,12 @@ local Exception = COLua{"Exeption";
     return self.msg
   end,
 
-  throw = function(self, level)
-      error(self.msg,level)
+  throw = function(self, level, traceback)
+    if traceback then
+      error(tostring(self),level or 2)
+    else
+      error(self, level or 2)
+    end
   end
 }
 
