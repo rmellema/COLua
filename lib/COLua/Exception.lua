@@ -2,7 +2,7 @@
   Author: Vexatos]]
 local COLua = require "COLua"
 
-local Exception = COLua{"Exeption";
+local Exception = COLua{"Exception";
   init = function(self, msg)
     self.msg = msg
     return self
@@ -17,7 +17,7 @@ local Exception = COLua{"Exeption";
   end,
 
   throw = function(self, level, traceback)
-    if traceback then
+    if traceback ~= false then
       error(tostring(self),level or 2)
     else
       error(self, level or 2)
