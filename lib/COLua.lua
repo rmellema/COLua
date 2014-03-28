@@ -1,16 +1,20 @@
 --- An OOP module for lua
-local reserved = {__type = true, __methods = true, __proto = true, __objmt = true, __index = true, __newindex =true, __metatable = true, __name = true, __parents = true} 
+local reserved = {__type = true, __methods = true, __proto = true,
+    __objmt = true, __index = true, __newindex =true, __metatable = true,
+    __name = true, __parents = true, __class = true} 
 
 local function registerValue(clss, key, value)
   assert(type(clss) == "table", "Trying to register a value on a non table")
   assert(type(key) == "string", "The key must be a string!")
   if key:sub(1,2) == '__' and not reserved[key] then
     clss.__objmt[key] = value
-    clss.__objmt.__metatable[key] = value
+    --clss.__objmt.__metatable[key] = value
   elseif key == "__index" or key == "__newindex" then
     clss.__objmt[key:sub(3, -1)] = value
   elseif key:sub(1,1) == '_' then
-    if reserved[key] then error("Trying to set field: "..key.." of a class") end
+    if reserved[key] then 
+      error("Trying to set field: "..key.." of a class") 
+    end
     rawset(clss, key:sub(2, -1), value)
   else
     rawset(clss.__methods, key, value)
@@ -25,29 +29,34 @@ local oldType = type
 local function type(obj)
   if oldType(obj) ~= "table" then
     return oldType(obj)
-  elseif obj.type and oldType(obj.type) == "function" then
-    return obj:type()
-  elseif obj.__type then
-    return obj.__type
   else
-    return oldType(obj)
+    local objMt = getmetatable(obj)
+    if objMT and oldtype(objMt) == 'table' and objMt.__type then
+      return objMt.__type
+    else
+      return oldType(obj)
+    end
   end
 end
 
 
 local Object = {}
 Object.__methods = {}
-Object.__type = "Object"
-Object.__methods.__type = "Object"
-Object.__methods.__class = Object
+Object.__name = "Object"
 Object.__proto = {}
+Object.__objmt = {__index = Object.__methods, __newindex = registerMethod,
+    __type = "Object", __class = Object}
 
 function Object:new(...)
   return self:alloc():init(...)
 end
 
 function Object:alloc()
-  return setmetatable({super = self.super.__methods}, self.__objmt)
+  if rawget(self,'super') then
+    return setmetatable({super = self.super.__methods}, self.__objmt)
+  else
+    return setmetatable({}, self.__objmt)
+  end
 end
 
 function Object:type()
@@ -55,7 +64,7 @@ function Object:type()
 end
 
 function Object:name()
-  return self.__type
+  return self.__name
 end
 
 function Object:implements(proto)
@@ -90,15 +99,15 @@ function Object.__methods:init()
 end
 
 function Object.__methods:class()
-  return self.__class
+  return getmetatable(self).__class
 end
 
 function Object.__methods:type()
-  return self.__type
+  return getmetatable(self).__type
 end
 
 function Object:isKindOf(name)
-  if self:type() == name or self.__proto[name] then return true end
+  if self.__name == name or self.__proto[name] then return true end
   if self.super then
     return self.super:isKindOf(name)
   else
@@ -110,11 +119,65 @@ function Object.__methods:isKindOf(name)
   return self:class():isKindOf(name)
 end
 
-Object.registerValue = registerValue
-Object.__methods.registerValue = registerMethod
-Object.__objmt = {__index = Object.__methods, __newindex = registerMethod, __metatable = {}}
-setmetatable(Object, {__newindex = registerValue, __call = Object.new, __metatable = ""})
-setmetatable(Object.__methods, {__newindex = registerMethod, __metatable = ""})
+setmetatable(Object.__methods, {__newindex = registerMethod, 
+    __metatable = ""})
+
+local Class = {}
+Class.__methods = setmetatable({}, {__index = Object})
+Class.__name = "Class"
+Class.__proto = {}
+Class.__objmt = {__index = Class.__methods, __newindex = registerValue,
+    __type = "Class", __class = Class;
+    __call = function(self, ...) return self:new(...) end}
+Class.super = Object
+
+function Class:alloc(name, parent)
+  local methods = setmetatable({super = parent.__methods}, 
+      {__index = parent.__methods, __newindex = registerMethod})
+  local new
+  new = setmetatable({__name = name, super = parent,
+    __methods = methods; __objmt = {
+      __index = function(self, key)
+        if new.__objmt.index then
+          local ret = new.__objmt.index(self, key)
+          if ret then
+            return ret
+          end
+        end
+        return new.__methods[key]
+      end;
+      __type = name
+    }}, self.__objmt)
+  new.__objmt.__class = new
+  for k, v in pairs(parent.__objmt) do
+    if not reserved[k] and not new.__objmt then
+      new.__objmt[k] = v
+    end
+  end
+  return new
+end
+
+function Class:new(inter)
+  local name = inter[1] or inter['name']
+  local parent = inter[2] or inter['extends'] or Object
+  local prots = inter[3] or inter['implements']
+  inter [1], inter['name'], inter[2], inter['extends'], 
+      inter[3], inter['implements'] = nil, nil, nil, nil, nil, nil
+  print(tostring(name),'\n',tostring(parent),'\n',tostring(prots))
+  return self:alloc(name, parent):init(inter, prots)
+end
+
+function Class.__methods:init(functions, prototypes)
+  for k, v in pairs(functions) do
+    registerValue(self, k, v)
+  end
+  return self
+end
+
+setmetatable(Object, { __newindex = registerValue,
+    __type = "Class", __class = Class;
+    __call = Object.new})
+setmetatable(Class, Class.__objmt)
 
 local function prototype(tab, proto)
   proto = proto or tab
@@ -164,7 +227,7 @@ local function prototype(tab, proto)
   return proto
 end
 
-local function class(tab, inter)
+local function oldclass(tab, inter)
   inter = inter or tab
   assert(type(inter) == "table", "The interface must be a table!")
   local parent = inter.extends or Object
@@ -174,12 +237,10 @@ local function class(tab, inter)
   local prototypes = inter.implements or {}
   local clss = {}
   clss.__type = name
-  clss.__methods = setmetatable({}, {__index = parent.__methods, __newindex = registerMethod, __metetable = ""})
-  clss.__methods.__type = name
-  clss.__methods.__class = clss
+  clss.__methods = setmetatable({}, {__index = parent.__methods, __newindex = registerMethod, __metatable = ""})
   clss.__proto = {}
   clss.super = parent
-  local mt = {__index = parent, __newindex = registerValue, __call =function(self, ...) return self:new(...) end, __metatable = ""}
+  local mt = {__index = parent, __newindex = registerValue, __call =function(self, ...) return self:new(...) end,  __metatable = ""}
   clss.__objmt = {__index = function(self, key)
     if clss.__objmt.index then
       local ret = clss.__objmt.index(self, key)
@@ -196,7 +257,7 @@ local function class(tab, inter)
       return registerMethod(self, key, value)
     end
   end,
-  __metatable= {}}
+  __metatable= {},__type = name, __class = clss}
   for k, v in pairs(parent.__objmt) do
     if not reserved[k] then
       clss.__objmt[k] = v
@@ -216,4 +277,4 @@ local function class(tab, inter)
   return clss
 end
   
-return setmetatable({Object = Object, class = class, prototype = prototype, type = type}, {__call = class})
+return setmetatable({Object = Object,class = Class, Class = Class, oldclass = oldclass, prototype = prototype, type = type}, {__call = oldclass})
