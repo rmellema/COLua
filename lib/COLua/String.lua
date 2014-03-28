@@ -4,7 +4,7 @@ local COLua = require "COLua"
 local Box = require "COLua.Box"
 
 
-local String = COLua{ "String", implements = {Box};
+local String = COLua.Class{ "String", implements = {Box};
   -- Constructor
   init = function(self, str)
     if not str then return nil end
