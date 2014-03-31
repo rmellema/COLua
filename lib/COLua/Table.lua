@@ -1,9 +1,8 @@
 local COLua = require "COLua"
-local Box = require "COLua.Box"
 local String = require "COLua.String"
 local type = COLua.type
 
-local Table = COLua{ "Table", implements = {Box};
+local Table = COLua{ "Table";
   init = function(self, ...)
     local args = table.pack(...)
     args.n = nil

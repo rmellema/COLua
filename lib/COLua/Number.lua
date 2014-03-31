@@ -1,9 +1,8 @@
 local COLua = require "COLua"
-local Box = require "COLua.Box"
 local String = require "COLua.String"
 local type = COLua.type
 
-local Number = COLua{ "Number", implements = {Box};
+local Number = COLua{ "Number";
   init = function(self, number)
     assert(type(number) == "number", "Can't store a "..type(number).." in an object of class Number")
     self.num = number

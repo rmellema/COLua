@@ -1,8 +1,7 @@
 local COLua = require "COLua"
-local Box = require "Box"
 local type = COLua.type
 
-local Coroutine = class{ "Thread", implements = {Box};
+local Coroutine = class{ "Thread";
   init = function(self, func)
     if type(func) == "function" then
       self.co = coroutine.create(func)
