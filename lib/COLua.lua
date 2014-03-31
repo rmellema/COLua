@@ -8,7 +8,6 @@ local function registerValue(clss, key, value)
   assert(type(key) == "string", "The key must be a string!")
   if key:sub(1,2) == '__' and not reserved[key] then
     clss.__objmt[key] = value
-    --clss.__objmt.__metatable[key] = value
   elseif key == "__index" or key == "__newindex" then
     clss.__objmt[key:sub(3, -1)] = value
   elseif key:sub(1,1) == '_' then
@@ -31,7 +30,7 @@ local function type(obj)
     return oldType(obj)
   else
     local objMt = getmetatable(obj)
-    if objMT and oldtype(objMt) == 'table' and objMt.__type then
+    if objMt and oldType(objMt) == 'table' and objMt.__type then
       return objMt.__type
     else
       return oldType(obj)
@@ -71,25 +70,22 @@ function Object:implements(proto)
   if self.__proto[proto.__name] then return true end
   local implement, mismatch = true, nil
   for k, v in pairs(proto) do
-    assert(type(k) == "string", "The key must be a string!")
-    if not reserved[k] then
-      local comp = nil
-      if k:sub(1,2)== '__' then
-        comp = self.__objmt[k]
-      elseif string.sub(k, 1,1) == '_' then
-        comp = self[string.sub(k, 2, -1)]
-      else
-        comp = self.__methods[k]
-      end
-      if type(comp) ~= proto[k] then
-        implement = false
-        mismatch = k
-        break
-      end
+    local comp = nil
+    if k:sub(1,2)== '__' then
+      comp = self.__objmt[k]
+    elseif string.sub(k, 1,1) == '_' then
+      comp = self[string.sub(k, 2, -1)]
+    else
+      comp = self.__methods[k]
+    end
+    if type(comp) ~= proto[k] then
+      implement = false
+      mismatch = k
+      break
     end
   end
   if implement then
-    self.__proto[proto.__name] = true
+    self.__proto[proto.__name] = proto
   end
   return implement, mismatch
 end
@@ -107,7 +103,12 @@ function Object.__methods:type()
 end
 
 function Object:isKindOf(name)
-  if self.__name == name or self.__proto[name] then return true end
+  if self.__name == name then return true end
+  for _, proto in pairs(self.__proto) do
+    if proto:isKindOf(name) then
+      return true
+    end
+  end
   if self.super then
     return self.super:isKindOf(name)
   else
@@ -133,7 +134,7 @@ Class.__objmt = {__index = function(self, k)
         return Class.__methods[k]
       end
     end;
-    __type = "Class", __class = Class;
+    __type = "Class", __class = Class, __newindex = registerValue;
     __call = function(self, ...) return self:new(...) end}
 Class.super = Object
 
@@ -142,7 +143,7 @@ function Class:alloc(name, parent)
       {__index = parent.__methods, __newindex = registerMethod})
   local new
   new = setmetatable({__name = name, super = parent,
-    __methods = methods; __objmt = {
+    __methods = methods, __proto = {}; __objmt = {
       __index = function(self, key)
         if new.__objmt.index then
           local ret = new.__objmt.index(self, key)
@@ -177,6 +178,9 @@ function Class.__methods:init(functions, protocols)
     registerValue(self, k, v)
   end
   if protocols then
+    if type(protocols) == "Protocol" then
+      protocols = {protocols}
+    end
     for i = 1, #protocols do
       local imp, mismatch = self:implements(protocols[i])
       if not imp then
@@ -197,6 +201,76 @@ setmetatable(Object, { __newindex = registerValue,
     __call = Object.new})
 setmetatable(Class, Class.__objmt)
 
+local Protocol = Class{"Protocol";
+  --Metamethods
+  __newindex = function(self, key, value)
+    assert(type(key) == "string", "Keys must be strings!")
+    assert(type(value) == "string", "Values must be strings!")
+    rawset(self, key, value)
+  end,
+  __pairs = function(self)
+    local num = 0
+    return function(self, index)
+      local k, v = index, nil
+      repeat
+        k, v = next(self.__parents[num] or self, k)
+        if not k and num <= #(self.__parents)then
+          num = num + 1
+          k, v = next(self.__parents[num] or self)
+        end
+      until (not reserved[k] and k ~= "super")
+      return k, v
+    end, self, nil
+  end,
+  __index = function(self, key)
+    for _, parent in pairs(self.__parents) do
+      if parent[key] then
+        return parent[key]
+      end
+    end
+  end,
+  --Constructor
+  _alloc = function(self)
+    local obj = self.super.alloc(self)
+    obj.__parents = {}
+    return obj
+  end,
+  init = function(self, protocol)
+    local name = protocol[1] or protocol.name
+    local parents = protocol[2] or protocol.extends
+    protocol[1], protocol.name, protocol[2], protocol.extends 
+        = nil, nil, nil, nil
+    self.__name = name
+    if type(parents) == "table" then
+      self.__parents = parents
+    elseif type(parents) == "Protocol" or type(parents) == "nil" then
+      self.__parents = {parents}
+    else
+      error "extends must either be a table or a Protocol"
+    end
+    for k, v in pairs(protocol) do
+      self[k] = v
+    end
+    return self
+  end,
+  --Methods
+  isKindOf = function(self, name)
+    if self:name() == name then
+      return true
+    end
+    for _, parent in pairs(self.__parents) do
+      if parent:isKindOf(name) then
+        return true
+      end
+    end
+    return false
+  end
+}
+
+function Protocol:name()
+  return self.__name
+end
+      
 local function prototype(tab, proto)
   proto = proto or tab
   local name = proto[1] or "Unnamed"
@@ -245,54 +319,5 @@ local function prototype(tab, proto)
   return proto
 end
 
-local function oldclass(tab, inter)
-  inter = inter or tab
-  assert(type(inter) == "table", "The interface must be a table!")
-  local parent = inter.extends or Object
-  inter.extends = nil
-  local name = (inter[1] or "Unnamed")
-  inter[1] = nil
-  local prototypes = inter.implements or {}
-  local clss = {}
-  clss.__type = name
-  clss.__methods = setmetatable({}, {__index = parent.__methods, __newindex = registerMethod, __metatable = ""})
-  clss.__proto = {}
-  clss.super = parent
-  local mt = {__index = parent, __newindex = registerValue, __call =function(self, ...) return self:new(...) end,  __metatable = ""}
-  clss.__objmt = {__index = function(self, key)
-    if clss.__objmt.index then
-      local ret = clss.__objmt.index(self, key)
-      if ret then
-        return ret
-      end
-    end
-    return clss.__methods[key]
-  end,
-  __newindex = function(self, key, value)
-    if clss.__objmt.newindex then
-      return clss.__objmt.newindex(self, key, value)
-    else
-      return registerMethod(self, key, value)
-    end
-  end,
-  __metatable= {},__type = name, __class = clss}
-  for k, v in pairs(parent.__objmt) do
-    if not reserved[k] then
-      clss.__objmt[k] = v
-    end
-  end
-  setmetatable(clss, mt)
-  for key, value in pairs(inter) do
-    clss[key] = value
-  end
-  mt.__call = clss.new
-  for i = 1, #prototypes do
-    local imp, mismatch = clss:implements(prototypes[i])
-    if not imp then
-      error("Class "..name.." claims to implement "..prototypes[i].__name..", but doesn't implement "..mismatch)
-    end
-  end
-  return clss
-end
-  
-return setmetatable({Object = Object,class = Class, Class = Class, oldclass = oldclass, prototype = prototype, type = type}, {__call = oldclass})
+return setmetatable({Object = Object,class = Class, Class = Class, oldclass = oldclass, Protocol = Protocol, type = type}, 
+  {__call = function(_, inter) return Class:new(inter) end})
