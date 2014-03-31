@@ -126,7 +126,13 @@ local Class = {}
 Class.__methods = setmetatable({}, {__index = Object})
 Class.__name = "Class"
 Class.__proto = {}
-Class.__objmt = {__index = Class.__methods, __newindex = registerValue,
+Class.__objmt = {__index = function(self, k)
+      if self.super[k] then
+        return self.super[k]
+      else
+        return Class.__methods[k]
+      end
+    end;
     __type = "Class", __class = Class;
     __call = function(self, ...) return self:new(...) end}
 Class.super = Object
@@ -150,7 +156,7 @@ function Class:alloc(name, parent)
     }}, self.__objmt)
   new.__objmt.__class = new
   for k, v in pairs(parent.__objmt) do
-    if not reserved[k] and not new.__objmt then
+    if not reserved[k] and not new.__objmt[k] then
       new.__objmt[k] = v
     end
   end
@@ -163,15 +169,27 @@ function Class:new(inter)
   local prots = inter[3] or inter['implements']
   inter [1], inter['name'], inter[2], inter['extends'], 
       inter[3], inter['implements'] = nil, nil, nil, nil, nil, nil
-  print(tostring(name),'\n',tostring(parent),'\n',tostring(prots))
   return self:alloc(name, parent):init(inter, prots)
 end
 
-function Class.__methods:init(functions, prototypes)
+function Class.__methods:init(functions, protocols)
   for k, v in pairs(functions) do
     registerValue(self, k, v)
   end
+  if protocols then
+    for i = 1, #protocols do
+      local imp, mismatch = self:implements(protocols[i])
+      if not imp then
+        error("Class "..self:name().." claims to implement "..
+            protocols[i].__name..", but doesn't implement "..mismatch)
+      end
+    end
+  end
   return self
+end
+
+function Class.__methods:name()
+  return self.__name
 end
 
 setmetatable(Object, { __newindex = registerValue,
