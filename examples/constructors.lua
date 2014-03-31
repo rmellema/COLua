@@ -1,13 +1,14 @@
-local class = require "COLua"
+local class = require("COLua").Class
 
 local Foo = class{"Foo";
   init = function(self, n) 
-    self.n = n or self:class().n 
+    self.n = n or self:class().n
     return self 
   end,
   _n = 42,
   _m = 32}
 
+print "Start Test!"
 local obj = Foo:new(2)
 print(obj.n)
 local obj2 = Foo:new()

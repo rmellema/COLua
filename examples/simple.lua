@@ -1,4 +1,4 @@
-local class = require "COLua"
+local class = require("COLua").Class
 
 print("Start testing!")
 local Foo = class{"Foo",
