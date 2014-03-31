@@ -20,10 +20,6 @@ local function registerValue(clss, key, value)
   end
 end
 
-local function registerMethod(obj, key, value)
-  rawset(obj, key, value)
-end
-
 local oldType = type
 local function type(obj)
   if oldType(obj) ~= "table" then
@@ -43,8 +39,8 @@ local Object = {}
 Object.__methods = {}
 Object.__name = "Object"
 Object.__proto = {}
-Object.__objmt = {__index = Object.__methods, __newindex = registerMethod,
-    __type = "Object", __class = Object}
+Object.__objmt = {__index = Object.__methods, __type = "Object",
+  __class = Object}
 
 function Object:new(...)
   return self:alloc():init(...)
@@ -271,53 +267,6 @@ function Protocol:name()
   return self.__name
 end
       
-local function prototype(tab, proto)
-  proto = proto or tab
-  local name = proto[1] or "Unnamed"
-  proto[1] = nil
-  proto.__type = "Prototype"
-  proto.__name = name
-  if proto.extends then
-    proto.__parents = proto.extends
-    if type(proto.extends) == "Prototype" then
-      proto.extends = {proto.extends}
-    end
-    if type(proto.extends) == "table" then
-      proto.__parents = proto.extends
-      setmetatable(proto, {__index = function(tab, key)
-        for k, v in pairs(tab.__parents) do
-          if v[key] then
-            return v[key]
-          end
-        end
-      end,
-      __pairs = function(tab)
-        local num = 0
-        return function(prot, idx)
-          local key, value = next((tab.__parents[num] or prot), idx)
-          if not key then
-            num = num + 1
-            if tab.__parents[num] then
-              key, value = next(tab.__parents[num])
-            else
-              return nil
-            end
-          end
-          return key, value
-        end, tab, nil
-      end})
-    else
-      error "Trying to extend non prototypes or tables"
-    end
-    proto.extends = nil
-  end
-  for k, v in pairs(proto) do
-    if type(v) ~= "string" and not reserved[k] then
-      error("Invalid prototype, values must be strings, "..k.." is not a string")
-    end
-  end
-  return proto
-end
-
-return setmetatable({Object = Object,class = Class, Class = Class, oldclass = oldclass, Protocol = Protocol, type = type}, 
+return setmetatable({Object = Object,class = Class, Class = Class,
+    Protocol = Protocol, type = type}, 
   {__call = function(_, inter) return Class:new(inter) end})
