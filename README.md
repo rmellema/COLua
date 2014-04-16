@@ -15,6 +15,7 @@ COLua (Classes and Objects for Lua) is a Lua 5.2 module that adds supports for O
   * Distinction between class (static) methods and object (instance) methods
 * Easy way to add new methods
 * Method overriding
+* Protocols
 * Implemented in pure Lua
 
-It also exports one class, [`Object`](Object), that is the superclass for all other objects. 
+It also exports one class, [`Object`](https://github.com/Wobbo/COLua/wiki/Object), that is the superclass for all other objects and a class [`Class`](https://github.com/Wobbo/COLua/wiki/Class) that is the superclass for all classes.
