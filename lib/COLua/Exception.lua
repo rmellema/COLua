@@ -17,10 +17,8 @@ local Exception = COLua.Class{"Exception";
   end,
 
   throw = function(self, level, traceback)
-    if type(self) == "string" then
-      if traceback == nil then 
-        traceback = true 
-      end
+    if type(self.msg) == "string" and traceback == nil then 
+      traceback = true 
     end
     if traceback then
       error(tostring(self),level or 2)
