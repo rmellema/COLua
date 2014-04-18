@@ -4,8 +4,11 @@ local type = COLua.type
 
 local Table = COLua{ "Table";
   init = function(self, ...)
-    local args = table.pack(...)
+    local args = {...}
     args.n = nil
+    if type(args[1]) == 'table' then
+      args = args[1]
+    end
     for k, v in pairs(args) do
       self[k] = v
     end
@@ -22,26 +25,19 @@ local Table = COLua{ "Table";
       return key, value
     end, self, nil
   end,
-  -- Impelemtn merods from Box
-  _box = function(self, tab)
-    return self:new(table.unpack(tab))
-  end,
-  unbox = function(self)
-    local ret = {}
-    for k, v in pairs(self) do
-      ret[k] = v
-    end
-    return ret
-  end,
   -- Methods from the table library
   concat = function(self, sep, i, j)
     local tab = {self:unpack(i, j)}
     return String(table.concat(tab, sep))
   end,
   insert = function(self, pos, value)
-    table.insert(self, pos, value)
+    if value then
+      table.insert(self, pos, value)
+    else
+      table.insert(self, pos)
+    end
   end,
-  _pack = function(...)
+  _pack = function(self, ...)
     return Table(table.pack(...))
   end,
   remove = function(self, pos)
