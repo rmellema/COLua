@@ -36,12 +36,12 @@ local String = COLua.Class{ "String";
     return string.byte(self.str, i, j)
   end,
   _char = function(self, ...)
-    return String(string.char(self.str, ...))
+    return String(string.char(...))
   end,
-  _dump = function(func)
+  _dump = function(self, func)
     return String(string.dump(func))
   end,
-  find = function(self, patter, init, plain)
+  find = function(self, pattern, init, plain)
     return string.find(self.str, pattern, init, plain)
   end,
   _format = function(self, formatstring, ...)
@@ -63,7 +63,7 @@ local String = COLua.Class{ "String";
     return String(string.match(self.str, pattern, init))
   end,
   rep = function(self, n, sep)
-    return String(string.sub(self.str, n, sep))
+    return String(string.rep(self.str, n, sep))
   end,
   reverse = function(self)
     return String(string.reverse(self.str))
