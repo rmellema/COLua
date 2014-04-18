@@ -24,13 +24,6 @@ local String = COLua.Class{ "String";
       return String(obj1..obj2.str)
     end
   end,
-  -- Implement methods from Box
-  _box = function(self, str)
-    return self:new(str)
-  end,
-  unbox = function(self)
-    return self:tostring()
-  end,
   -- Methods from the string library
   byte = function(self, i, j)
     return string.byte(self.str, i, j)
