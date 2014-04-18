@@ -2,7 +2,7 @@
   Author: Vexatos]]
 local COLua = require "COLua"
 
-local Exception = COLua.Class{"Exception";
+COLua.Exception = COLua.Class{"Exception";
   init = function(self, msg)
     self.msg = msg
     return self
@@ -28,4 +28,4 @@ local Exception = COLua.Class{"Exception";
   end
 }
 
-return Exception
+return COLua.Exception

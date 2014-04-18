@@ -1,8 +1,8 @@
 local COLua = require "COLua"
-local String = require "COLua.String"
+local String = COLua.String
 local type = COLua.type
 
-local Table = COLua{ "Table";
+COLua.Table = COLua{ "Table";
   init = function(self, ...)
     local args = {...}
     args.n = nil
@@ -38,7 +38,7 @@ local Table = COLua{ "Table";
     end
   end,
   _pack = function(self, ...)
-    return Table(table.pack(...))
+    return COLua.Table(table.pack(...))
   end,
   remove = function(self, pos)
     return table.remove(self, pos)
@@ -56,4 +56,4 @@ local Table = COLua{ "Table";
     return table.unpack(ret)
   end}
 
-return Table
+return COLua.Table

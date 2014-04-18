@@ -2,7 +2,7 @@
 
 local COLua = require "COLua"
 
-local String = COLua.Class{ "String";
+COLua.String = COLua.Class{ "String";
   -- Constructor
   init = function(self, str)
     if not str then return nil end
@@ -19,9 +19,9 @@ local String = COLua.Class{ "String";
   end,
   __concat = function(obj1, obj2)
     if COLua.type(obj1) == "String" then
-      return String(obj1.str..obj2)
+      return COLua.String(obj1.str..obj2)
     else
-      return String(obj1..obj2.str)
+      return COLua.String(obj1..obj2.str)
     end
   end,
   -- Methods from the string library
@@ -29,43 +29,43 @@ local String = COLua.Class{ "String";
     return string.byte(self.str, i, j)
   end,
   _char = function(self, ...)
-    return String(string.char(...))
+    return COLua.String(string.char(...))
   end,
   _dump = function(self, func)
-    return String(string.dump(func))
+    return COLua.String(string.dump(func))
   end,
   find = function(self, pattern, init, plain)
     return string.find(self.str, pattern, init, plain)
   end,
   _format = function(self, formatstring, ...)
-    return String(string.format(formatstring, ...))
+    return COLua.String(string.format(formatstring, ...))
   end,
   gmatch = function(self, pattern)
     return string.gmatch(self.str, pattern)
   end,
   gsub = function(self, pattern, repl, n)
-    return String(string.gsub(self.str, pattern, repl, n))
+    return COLua.String(string.gsub(self.str, pattern, repl, n))
   end,
   len = function(self)
     return string.len(self.str)
   end,
   lower = function(self)
-    return String(string.lower(self.str))
+    return COLua.String(string.lower(self.str))
   end,
   match = function(self, pattern, init)
-    return String(string.match(self.str, pattern, init))
+    return COLua.String(string.match(self.str, pattern, init))
   end,
   rep = function(self, n, sep)
-    return String(string.rep(self.str, n, sep))
+    return COLua.String(string.rep(self.str, n, sep))
   end,
   reverse = function(self)
-    return String(string.reverse(self.str))
+    return COLua.String(string.reverse(self.str))
   end,
   sub = function(self, i, j)
-    return String(string.sub(self.str, i, j))
+    return COLua.String(string.sub(self.str, i, j))
   end,
   upper = function(self)
-    return String(string.upper(self.str))
+    return COLua.String(string.upper(self.str))
   end}
 
-return String
+return COLua.String

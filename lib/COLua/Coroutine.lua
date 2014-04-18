@@ -1,7 +1,7 @@
 local COLua = require "COLua"
 local type = COLua.type
 
-local Coroutine = class{ "Thread";
+COLua.Coroutine = COLua{ "Thread";
   init = function(self, func)
     if type(func) == "function" then
       self.co = coroutine.create(func)
@@ -12,14 +12,6 @@ local Coroutine = class{ "Thread";
     end
     return self
   end,
-  -- Implement methods from Box
-  _box = function(self, co)
-    return self:new(co)
-  end,
-  unbox = function(self)
-    return self.co
-  end,
-  -- Implement methods from coroutine
   _create = function(self, func)
     return self:new(func)
   end,
@@ -36,4 +28,4 @@ local Coroutine = class{ "Thread";
     return coroutine.yield(...)
   end}
 
-return Coroutine
+return COLua.Coroutine

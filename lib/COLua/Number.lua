@@ -2,7 +2,7 @@ local COLua = require "COLua"
 local String = require "COLua.String"
 local type = COLua.type
 
-local Number = COLua{ "Number";
+COLua.Number = COLua{ "Number";
   init = function(self, number)
     assert(type(number) == "number", "Can't store a "..type(number).." in an object of class Number")
     self.num = number
@@ -17,12 +17,12 @@ local Number = COLua{ "Number";
     if type(obj1) == "Number" then
       ret = obj1.num + obj2
       if type(ret) == "number" then
-        ret = Number(ret)
+        ret = COLua.Number(ret)
       end
     else
       ret = obj1+obj2.num
       if type(ret) == "number" then
-        ret = Number(ret)
+        ret = COLua.Number(ret)
       end
     end
     return ret
@@ -32,12 +32,12 @@ local Number = COLua{ "Number";
     if type(obj1) == "Number" then
       ret = obj1.num - obj2
       if type(ret) == "number" then
-        ret = Number(ret)
+        ret = COLua.Number(ret)
       end
     else
       ret = obj1 - obj2.num
       if type(ret) == "number" then
-        ret = Number(ret)
+        ret = COLua.Number(ret)
       end
     end
     return ret
@@ -47,12 +47,12 @@ local Number = COLua{ "Number";
     if type(obj1) == "Number" then
       ret = obj1.num * obj2
       if type(ret) == "number" then
-        ret = Number(ret)
+        ret = COLua.Number(ret)
       end
     else
       ret = obj1 * obj2.num
       if type(ret) == "number" then
-        ret = Number(ret)
+        ret = COLua.Number(ret)
       end
     end
     return ret
@@ -62,12 +62,12 @@ local Number = COLua{ "Number";
     if type(obj1) == "Number" then
       ret = obj1.num / obj2
       if type(ret) == "number" then
-        ret = Number(ret)
+        ret = COLua.Number(ret)
       end
     else
       ret = obj1 / obj2.num
       if type(ret) == "number" then
-        ret = Number(ret)
+        ret = COLua.Number(ret)
       end
     end
     return ret
@@ -77,12 +77,12 @@ local Number = COLua{ "Number";
     if type(obj1) == "Number" then
       ret = obj1.num % obj2
       if type(ret) == "number" then
-        ret = Number(ret)
+        ret = COLua.Number(ret)
       end
     else
       ret = obj1 % obj2.num
       if type(ret) == "number" then
-        ret = Number(ret)
+        ret = COLua.Number(ret)
       end
     end
     return ret
@@ -92,18 +92,18 @@ local Number = COLua{ "Number";
     if type(obj1) == "Number" then
       ret = obj1.num ^ obj2
       if type(ret) == "number" then
-        ret = Number(ret)
+        ret = COLua.Number(ret)
       end
     else
       ret = obj1 ^ obj2.num
       if type(ret) == "number" then
-        ret = Number(ret)
+        ret = COLua.Number(ret)
       end
     end
     return ret
   end,
   __unm = function(self)
-    return Number(-self.num)
+    return COLua.Number(-self.num)
   end,
   __eq = function(obj1, obj2)
     return (obj1.num == obj2.num)
@@ -125,13 +125,6 @@ local Number = COLua{ "Number";
     elseif type(obj1) ~= "Number" and type(obj2) == "Number" then
       return obj1 <= obj2.num
     end
-  end,
-  -- Implementing Box
-  _box = function(self, num)
-    return sefl:new(num)
-  end,
-  unbox = function(self)
-    return self.num
   end}
 
-return Number
+return COLua.Number
